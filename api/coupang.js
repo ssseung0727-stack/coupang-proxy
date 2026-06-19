@@ -13,21 +13,20 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: 'API 키가 없습니다.' });
   }
 
-  function makeAuth(method, path) {
+  function makeAuth(method, path, query) {
     const datetime = new Date().toISOString().substr(2, 17).replace(/:/gi, '').replace(/-/gi, '') + 'Z';
-    const message = datetime + method + path + '';
+    const message = datetime + method + path + (query || '');
     const signature = crypto.createHmac('sha256', secretKey).update(message).digest('hex');
-    return {
-      datetime,
-      auth: `CEA algorithm=HmacSHA256, access-key=${accessKey}, signed-date=${datetime}, signature=${signature}`
-    };
+    const auth = `CEA algorithm=HmacSHA256, access-key=${accessKey}, signed-date=${datetime}, signature=${signature}`;
+    return { datetime, auth };
   }
 
   try {
     if (action === 'search') {
-      const path = `/v2/providers/affiliate_open_api/apis/openapi/products/search?keyword=${encodeURIComponent(keyword)}&limit=${limit || 5}`;
-      const { auth } = makeAuth('GET', path);
-      const response = await fetch(`https://api-gateway.coupang.com${path}`, {
+      const path = '/v2/providers/affiliate_open_api/apis/openapi/products/search';
+      const query = `keyword=${encodeURIComponent(keyword)}&limit=${limit || 5}`;
+      const { auth } = makeAuth('GET', path, query);
+      const response = await fetch(`https://api-gateway.coupang.com${path}?${query}`, {
         method: 'GET',
         headers: { 'Authorization': auth, 'Content-Type': 'application/json;charset=UTF-8' }
       });
@@ -37,8 +36,9 @@ module.exports = async function handler(req, res) {
     }
 
     if (action === 'deeplink') {
-      const path = `/v2/providers/affiliate_open_api/apis/openapi/deeplink`;
-      const { auth } = makeAuth('POST', path);
+      const path = '/v2/providers/affiliate_open_api/apis/openapi/deeplink';
+      const query = '';
+      const { auth } = makeAuth('POST', path, query);
       const response = await fetch(`https://api-gateway.coupang.com${path}`, {
         method: 'POST',
         headers: { 'Authorization': auth, 'Content-Type': 'application/json;charset=UTF-8' },
