@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "functions": {
+    "api/coupang.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "routes": [
+    {
+      "src": "/api/coupang",
+      "dest": "/api/coupang.js"
+    }
+  ]
+}
