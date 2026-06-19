@@ -7,9 +7,19 @@ function generateHmacSignature(secretKey, message) {
 function buildCoupangHeaders(method, path, accessKey, secretKey) {
   const now = new Date();
   const pad = (n) => String(n).padStart(2, '0');
-  const dt = now.getUTCFullYear() + pad(now.getUTCMonth()+1) + pad(now.getUTCDate()) + 'T' + pad(now.getUTCHours()) + pad(now.getUTCMinutes()) + pad(now.getUTCSeconds()) + 'Z';
+  const dt =
+    now.getUTCFullYear() +
+    pad(now.getUTCMonth() + 1) +
+    pad(now.getUTCDate()) +
+    'T' +
+    pad(now.getUTCHours()) +
+    pad(now.getUTCMinutes()) +
+    pad(now.getUTCSeconds()) +
+    'Z';
+
   const message = `${dt}\n${method}\n${path}\n`;
   const signature = generateHmacSignature(secretKey, message);
+
   return {
     Authorization: `CEA algorithm=HmacSHA256, access-key=${accessKey}, signed-date=${dt}, signature=${signature}`,
     'Content-Type': 'application/json;charset=UTF-8',
@@ -22,12 +32,23 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { action, accessKey, secretKey, keyword, productUrl, limit } = req.body || req.query;
-  if (!accessKey || !secretKey) return res.status(400).json({ error: 'API 키가 없습니다.' });
+  let body = {};
+  if (req.method === 'POST') {
+    body = req.body || {};
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch(e) { body = {}; }
+    }
+  }
+
+  const { action, accessKey, secretKey, keyword, productUrl, limit } = body;
+
+  if (!accessKey || !secretKey) {
+    return res.status(400).json({ error: 'API 키가 없습니다.' });
+  }
 
   try {
     if (action === 'search') {
-      const path = `/v2/providers/affiliate_open_api/apis/openapi/products/search?keyword=${encodeURIComponent(keyword)}&limit=${limit||5}`;
+      const path = `/v2/providers/affiliate_open_api/apis/openapi/products/search?keyword=${encodeURIComponent(keyword)}&limit=${limit || 5}`;
       const headers = buildCoupangHeaders('GET', path, accessKey, secretKey);
       const response = await fetch(`https://api-gateway.coupang.com${path}`, { method: 'GET', headers });
       const data = await response.json();
