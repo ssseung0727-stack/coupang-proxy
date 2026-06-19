@@ -1,8 +1,3 @@
 {
-  "name": "coupang-proxy",
-  "version": "1.0.0",
-  "private": true,
-  "engines": {
-    "node": "20.x"
-  }
+  "version": 2
 }
